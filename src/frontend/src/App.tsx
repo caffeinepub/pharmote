@@ -6,12 +6,9 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import BottomNav from "./components/BottomNav";
 import ProfileSetup from "./components/ProfileSetup";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import { useGetCallerUserProfile } from "./hooks/useQueries";
-import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Library from "./pages/Library";
 import NoteDetail from "./pages/NoteDetail";
@@ -20,58 +17,39 @@ import Profile from "./pages/Profile";
 import Upload from "./pages/Upload";
 
 const ONBOARDING_KEY = "pharmote_onboarding_done";
+const PROFILE_KEY = "pharmote_profile";
 
-// Root layout
 function RootLayout() {
-  const { identity, isInitializing } = useInternetIdentity();
-  const isAuthenticated = !!identity;
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) === "true",
   );
-
-  const {
-    data: profile,
-    isLoading: profileLoading,
-    isFetched,
-  } = useGetCallerUserProfile();
-
-  const handleOnboardingComplete = () => {
-    localStorage.setItem(ONBOARDING_KEY, "true");
-    setOnboardingDone(true);
-  };
-
-  const showProfileSetup =
-    isAuthenticated && !profileLoading && isFetched && profile === null;
+  const [profileDone, setProfileDone] = useState(
+    () => !!localStorage.getItem(PROFILE_KEY),
+  );
 
   if (!onboardingDone) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
-  }
-
-  if (!isAuthenticated) {
-    return <Auth />;
-  }
-
-  if (isInitializing || (profileLoading && !isFetched)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary animate-pulse" />
-          <p className="text-muted-foreground text-sm">Loading...</p>
-        </div>
-      </div>
+      <Onboarding
+        onComplete={() => {
+          localStorage.setItem(ONBOARDING_KEY, "true");
+          setOnboardingDone(true);
+        }}
+      />
     );
+  }
+
+  if (!profileDone) {
+    return <ProfileSetup onComplete={() => setProfileDone(true)} />;
   }
 
   return (
     <div className="max-w-lg mx-auto relative">
-      {showProfileSetup && <ProfileSetup onComplete={() => {}} />}
       <Outlet />
       <BottomNav />
     </div>
   );
 }
 
-// Route definitions
 const rootRoute = createRootRoute({ component: RootLayout });
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,

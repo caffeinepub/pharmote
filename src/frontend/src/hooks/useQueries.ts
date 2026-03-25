@@ -200,7 +200,7 @@ export const CATEGORY_LABELS: Record<CustomCategory, string> = {
   [CustomCategory.bPharm]: "B Pharm",
   [CustomCategory.dPharm]: "D Pharm",
   [CustomCategory.mPharm]: "M Pharm",
-  [CustomCategory.graduate]: "Graduate",
+  [CustomCategory.graduate]: "Competitive Notes",
 };
 
 export const ALL_CATEGORIES = Object.values(CustomCategory);

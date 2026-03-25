@@ -11,12 +11,12 @@ import Principal "mo:core/Principal";
 import Int "mo:core/Int";
 
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
+
 import AccessControl "authorization/access-control";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
-(with migration = Migration.run)
+
 actor {
   type CustomCategory = {
     #bPharm;

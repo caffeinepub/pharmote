@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { Principal } from "@icp-sdk/core/principal";
+import { Principal } from "@icp-sdk/core/principal";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -23,12 +23,10 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CustomCategory, ExternalBlob } from "../backend";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { CATEGORY_LABELS, useCreateNote } from "../hooks/useQueries";
 
 export default function Upload() {
   const navigate = useNavigate();
-  const { identity } = useInternetIdentity();
   const createNote = useCreateNote();
 
   const [title, setTitle] = useState("");
@@ -36,6 +34,7 @@ export default function Upload() {
   const [category, setCategory] = useState<CustomCategory>(
     CustomCategory.bPharm,
   );
+  const [semester, setSemester] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -52,7 +51,7 @@ export default function Upload() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !identity) return;
+    if (!file) return;
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -63,16 +62,20 @@ export default function Upload() {
         setUploadProgress(pct);
       });
 
+      const noteTitle = semester.trim()
+        ? `${title.trim()} [${semester.trim()}]`
+        : title.trim();
+
       const note = {
         id: crypto.randomUUID(),
-        title: title.trim(),
+        title: noteTitle,
         description: description.trim(),
         blob,
         category,
         isPublic,
         isFeatured: false,
         timestamp: BigInt(Date.now()),
-        uploader: identity.getPrincipal() as unknown as Principal,
+        uploader: Principal.anonymous() as unknown as Principal,
       };
 
       await createNote.mutateAsync(note);
@@ -215,6 +218,23 @@ export default function Upload() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Semester */}
+          <div>
+            <Label
+              htmlFor="note-semester"
+              className="text-foreground font-medium"
+            >
+              Semester
+            </Label>
+            <Input
+              id="note-semester"
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              placeholder="e.g. Semester 3"
+              className="mt-1 bg-muted border-border text-foreground placeholder:text-muted-foreground"
+            />
           </div>
 
           {/* Public toggle */}

@@ -8,10 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { CustomCategory } from "../backend";
-import { useSaveCallerUserProfile } from "../hooks/useQueries";
 
 interface ProfileSetupProps {
   onComplete: () => void;
@@ -24,22 +22,21 @@ const COURSE_OPTIONS: { value: CustomCategory; label: string }[] = [
   { value: CustomCategory.graduate, label: "Graduate" },
 ];
 
+const PROFILE_KEY = "pharmote_profile";
+
 export default function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [dob, setDob] = useState("");
   const [course, setCourse] = useState<CustomCategory>(CustomCategory.bPharm);
-  const saveProfile = useSaveCallerUserProfile();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !age || !dob || !course) return;
-    await saveProfile.mutateAsync({
-      name: name.trim(),
-      age: BigInt(age),
-      dob,
-      course,
-    });
+    localStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ name: name.trim(), age, dob, course }),
+    );
     onComplete();
   };
 
@@ -135,19 +132,11 @@ export default function ProfileSetup({ onComplete }: ProfileSetupProps) {
           </div>
           <Button
             type="submit"
-            disabled={
-              !name.trim() || !age || !dob || !course || saveProfile.isPending
-            }
+            disabled={!name.trim() || !age || !dob || !course}
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             data-ocid="profile_setup.submit_button"
           >
-            {saveProfile.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
-              </>
-            ) : (
-              "Get Started"
-            )}
+            Get Started
           </Button>
         </form>
       </div>
