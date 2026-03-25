@@ -1,0 +1,310 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  CalendarDays,
+  Edit2,
+  Loader2,
+  LogOut,
+  Save,
+  User,
+  X,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { CustomCategory } from "../backend";
+import NoteCard from "../components/NoteCard";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  CATEGORY_LABELS,
+  useCreateOrUpdateProfile,
+  useGetCallerUserProfile,
+  useGetUserNotes,
+} from "../hooks/useQueries";
+
+const COURSE_OPTIONS: { value: CustomCategory; label: string }[] = [
+  { value: CustomCategory.bPharm, label: "B Pharm" },
+  { value: CustomCategory.dPharm, label: "D Pharm" },
+  { value: CustomCategory.mPharm, label: "M Pharm" },
+  { value: CustomCategory.graduate, label: "Graduate" },
+];
+
+export default function Profile() {
+  const { clear, identity } = useInternetIdentity();
+  const qc = useQueryClient();
+  const { data: profile, isLoading: profileLoading } =
+    useGetCallerUserProfile();
+  const { data: userNotes = [], isLoading: notesLoading } = useGetUserNotes(
+    identity?.getPrincipal() ?? null,
+  );
+  const updateProfile = useCreateOrUpdateProfile();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAge, setEditAge] = useState("");
+  const [editDob, setEditDob] = useState("");
+  const [editCourse, setEditCourse] = useState<CustomCategory>(
+    CustomCategory.bPharm,
+  );
+
+  useEffect(() => {
+    if (profile) {
+      setEditName(profile.name);
+      setEditAge(profile.age.toString());
+      setEditDob(profile.dob);
+      setEditCourse(profile.course);
+    }
+  }, [profile]);
+
+  const handleLogout = async () => {
+    await clear();
+    qc.clear();
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile.mutateAsync({
+        name: editName.trim(),
+        age: BigInt(editAge),
+        dob: editDob,
+        course: editCourse,
+      });
+      toast.success("Profile updated!");
+      setIsEditing(false);
+    } catch {
+      toast.error("Failed to update profile");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="bg-secondary sticky top-0 z-10 px-4 py-4 border-b border-border flex items-center justify-between">
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          Profile
+        </h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          data-ocid="profile.logout_button"
+        >
+          <LogOut className="w-4 h-4 mr-1" />
+          Logout
+        </Button>
+      </div>
+
+      <div className="px-4 py-6 space-y-6">
+        {/* Profile Card */}
+        {profileLoading ? (
+          <div className="space-y-3" data-ocid="profile.loading_state">
+            <Skeleton className="w-20 h-20 rounded-full mx-auto" />
+            <Skeleton className="h-6 w-40 mx-auto" />
+            <Skeleton className="h-4 w-60 mx-auto" />
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-secondary rounded-2xl p-5 border border-border"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+                  {profile?.name ? (
+                    <span className="text-2xl font-bold text-primary-foreground">
+                      {profile.name[0].toUpperCase()}
+                    </span>
+                  ) : (
+                    <User className="w-7 h-7 text-primary-foreground" />
+                  )}
+                </div>
+                {!isEditing && (
+                  <div className="space-y-1">
+                    <h2 className="font-display text-lg font-bold text-foreground">
+                      {profile?.name ?? "Anonymous"}
+                    </h2>
+                    {profile?.course && (
+                      <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
+                        {CATEGORY_LABELS[profile.course]}
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {profile?.age !== undefined && (
+                        <span>Age {profile.age.toString()}</span>
+                      )}
+                      {profile?.dob && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
+                          {profile.dob}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80"
+                  data-ocid="profile.edit_button"
+                >
+                  <Edit2 className="w-4 h-4 text-foreground" />
+                </button>
+              )}
+            </div>
+
+            {isEditing && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-foreground text-sm">Name</Label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 bg-muted border-border text-foreground"
+                    data-ocid="profile.input"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground text-sm">Age</Label>
+                  <Input
+                    type="number"
+                    min={16}
+                    max={99}
+                    value={editAge}
+                    onChange={(e) => setEditAge(e.target.value)}
+                    className="mt-1 bg-muted border-border text-foreground"
+                    data-ocid="profile.age_input"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground text-sm">
+                    Date of Birth
+                  </Label>
+                  <Input
+                    type="date"
+                    value={editDob}
+                    onChange={(e) => setEditDob(e.target.value)}
+                    className="mt-1 bg-muted border-border text-foreground"
+                    data-ocid="profile.dob_input"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground text-sm">Course</Label>
+                  <Select
+                    value={editCourse}
+                    onValueChange={(v) => setEditCourse(v as CustomCategory)}
+                  >
+                    <SelectTrigger
+                      className="mt-1 bg-muted border-border text-foreground"
+                      data-ocid="profile.select"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      {COURSE_OPTIONS.map((opt) => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                          className="text-popover-foreground"
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={
+                      !editName.trim() ||
+                      !editAge ||
+                      !editDob ||
+                      updateProfile.isPending
+                    }
+                    size="sm"
+                    className="bg-primary text-primary-foreground"
+                    data-ocid="profile.save_button"
+                  >
+                    {updateProfile.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <Save className="w-3 h-3 mr-1" />
+                    )}
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    variant="outline"
+                    size="sm"
+                    className="border-border text-foreground"
+                    data-ocid="profile.cancel_button"
+                  >
+                    <X className="w-3 h-3 mr-1" /> Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* User's Notes */}
+        <div>
+          <h2 className="font-display text-lg font-bold text-foreground mb-3">
+            My Uploads
+          </h2>
+          {notesLoading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-36 rounded-xl" />
+              ))}
+            </div>
+          ) : userNotes.length === 0 ? (
+            <div className="py-10 text-center" data-ocid="profile.empty_state">
+              <p className="text-muted-foreground text-sm">
+                You haven't uploaded any notes yet.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {userNotes.map((note, i) => (
+                <NoteCard key={note.id} note={note} index={i + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 pb-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          © {new Date().getFullYear()}.{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Built with ❤️ using caffeine.ai
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
