@@ -220,20 +220,17 @@ export default function Upload() {
             </Select>
           </div>
 
-          {/* Semester */}
+          {/* Semester / Exam Name */}
           <div>
-            <Label
-              htmlFor="note-semester"
-              className="text-foreground font-medium"
-            >
-              Semester
+            <Label className="text-foreground font-medium">
+              Semester / Exam Name
             </Label>
             <Input
-              id="note-semester"
+              className="mt-1 bg-muted border-border text-foreground"
+              placeholder="e.g. Semester 3, Mid Term Exam..."
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              placeholder="e.g. Semester 3"
-              className="mt-1 bg-muted border-border text-foreground placeholder:text-muted-foreground"
+              data-ocid="upload.semester.input"
             />
           </div>
 
